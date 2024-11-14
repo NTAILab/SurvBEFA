@@ -1,13 +1,13 @@
 import numpy as np
 import torch
 import cvxpy as cp
-from beran import Beran
+from models.beran import Beran
 from pandas.core.common import flatten
 from sklearn.neighbors import NearestNeighbors
 
 class Ensemble_Beran():
     def __init__(self, omega = 1, tau = 1, maximum_number_of_pairs = 10,
-                 n_estimators = 50, size_bagging = 1,
+                 n_estimators = 10, size_bagging = 0.4,
                  epsilon = 0.5, lr = 1e-1, const_in_div = 100, num_epoch = 100,
                  MAE_optimisation = True, 
                  epsilon_optimisation = True, 
@@ -140,18 +140,18 @@ class Ensemble_Beran():
 
     def _optimisation_C_index_gradient(self, alpha, H, S, T, left, right,
                               epsilon, lr, const_in_div, num_epoch):
-        epsilon = torch.tensor(epsilon, device="cuda:0")  
-        v = torch.tensor(np.ones(alpha.shape[1]), requires_grad=True, device="cuda:0")
+        epsilon = torch.tensor(epsilon, device="cpu")  
+        v = torch.tensor(np.ones(alpha.shape[1]), requires_grad=True, device="cpu")
         optimizer = torch.optim.Adam([v], lr=lr)
 
         for iteration in range(num_epoch):
             optimizer.zero_grad()
 
-            alpha_tensor = torch.tensor(alpha, dtype=torch.float32, device="cuda:0")
+            alpha_tensor = torch.tensor(alpha, dtype=torch.float32, device="cpu")
             v_tensor = v.unsqueeze(0)
             sm = torch.nn.Softmax(dim=1)
             v_tenser_softmax = sm(v_tensor)
-            T_tensor = torch.tensor(T, dtype=torch.float32, device="cuda:0")
+            T_tensor = torch.tensor(T, dtype=torch.float32, device="cpu")
             C = (1 - epsilon) * alpha_tensor + v_tenser_softmax*epsilon
             G = torch.sum(C * T_tensor, dim=1)
             G_ij = -G[left] + G[right]
@@ -169,18 +169,18 @@ class Ensemble_Beran():
         return v_tenser_softmax.detach().cpu().numpy(), epsilon.item()
     
     def _optimisation_MAE_gradient(self, alpha, T, epsilon, times_train, delta_train, lr, num_epoch):
-        epsilon = torch.tensor(epsilon, device="cuda:0")  
-        v = torch.tensor(np.ones(alpha.shape[1]), requires_grad=True, device="cuda:0")
+        epsilon = torch.tensor(epsilon, device="cpu")  
+        v = torch.tensor(np.ones(alpha.shape[1]), requires_grad=True, device="cpu")
         optimizer = torch.optim.Adam([v], lr=lr)
-        times_train = torch.tensor(times_train, device="cuda:0")
+        times_train = torch.tensor(times_train, device="cpu")
         for iteration in range(num_epoch):
             optimizer.zero_grad()
 
-            alpha_tensor = torch.tensor(alpha, dtype=torch.float32, device="cuda:0")
+            alpha_tensor = torch.tensor(alpha, dtype=torch.float32, device="cpu")
             v_tensor = v.unsqueeze(0)
             sm = torch.nn.Softmax(dim=1)
             v_tenser_softmax = sm(v_tensor)
-            T_tensor = torch.tensor(T, dtype=torch.float32, device="cuda:0")
+            T_tensor = torch.tensor(T, dtype=torch.float32, device="cpu")
             C = (1 - epsilon) * alpha_tensor + v_tenser_softmax*epsilon
             G = torch.sum(C * T_tensor, dim=1)
 
