@@ -1,11 +1,11 @@
 import numpy as np
 import torch
 import cvxpy as cp
-from models.beran import Beran
+from .beran import Beran
 from pandas.core.common import flatten
 from sklearn.neighbors import NearestNeighbors
 
-class Ensemble_Beran():
+class EnsembleBeran():
     def __init__(self, omega = 1, tau = 1, maximum_number_of_pairs = 10,
                  n_estimators = 10, size_bagging = 0.4,
                  epsilon = 0.5, lr = 1e-1, const_in_div = 100, num_epoch = 100,
@@ -254,6 +254,11 @@ class Ensemble_Beran():
 
 
     def fit(self, X_train, y_train):
+        times = np.array(list(zip(*y_train))[1])
+        args = np.unique(times, return_index=True)[1]
+        times = times[args]
+        y_train = y_train[args]
+        X_train = X_train[args]
         self.X_train, self.y_train, self.times_train, self.delta_train = self._sorting(X_train, y_train)
         self.left, self.right = self._find_set_for_C_index_optimisation(self.y_train, self.maximum_number_of_pairs)
         list_of_kernels = ["epanechnikov", "triangular", "quartic", "gauss"]
